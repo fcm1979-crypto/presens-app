@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'matching_screen.dart';
 
 class NewSessionScreen extends StatefulWidget {
   const NewSessionScreen({super.key});
@@ -124,7 +125,17 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MatchingScreen(
+                          duration: _selectedDuration,
+                          goal: _goalController.text,
+                        ),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4AA064),
                     foregroundColor: const Color(0xFF0C1810),
