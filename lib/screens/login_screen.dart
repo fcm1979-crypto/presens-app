@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'new_session_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,9 +26,10 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       );
       if (mounted) {
-        ScaffoldMessenger.of(
+        Navigator.pushReplacement(
           context,
-        ).showSnackBar(const SnackBar(content: Text('¡Bienvenido de nuevo!')));
+          MaterialPageRoute(builder: (_) => const NewSessionScreen()),
+        );
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
