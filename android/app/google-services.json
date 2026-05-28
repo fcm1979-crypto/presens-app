@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1023679185638",
+    "project_id": "presens-4191c",
+    "storage_bucket": "presens-4191c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023679185638:android:c5112dd1a301bbd75bf127",
+        "android_client_info": {
+          "package_name": "com.presens.presens"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOZHqpCKebj_5PePMBmc1U-JZ3ySwz8jQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
