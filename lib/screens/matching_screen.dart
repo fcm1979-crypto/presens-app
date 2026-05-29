@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../supabase_config.dart';
 import 'session_screen.dart';
 
 class MatchingScreen extends StatefulWidget {
@@ -11,10 +13,34 @@ class MatchingScreen extends StatefulWidget {
 }
 
 class _MatchingScreenState extends State<MatchingScreen> {
+  String? _sessionId;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
+    _startMatching();
+  }
+
+  Future<void> _startMatching() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+
+    // Buscar si hay alguien esperando
+    final waiting = await supabase
+        .from('sessions')
+        .select()
+        .eq('status', 'waiting')
+        .eq('language', 'es')
+        .neq('user_id', userId)
+        .limit(1)
+        .maybeSingle();
+
+    if (waiting != null) {
+      // Hay alguien esperando — emparejamos
+      await supabase
+          .from('sessions')
+          .update({'status': 'matched', 'partner_id': userId})
+          .eq('id', waiting['id']);
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -24,7 +50,50 @@ class _MatchingScreenState extends State<MatchingScreen> {
           ),
         );
       }
-    });
+    } else {
+      // No hay nadie — nos ponemos en espera
+      final result = await supabase
+          .from('sessions')
+          .insert({
+            'user_id': userId,
+            'goal': widget.goal,
+            'duration': widget.duration,
+            'language': 'es',
+            'status': 'waiting',
+          })
+          .select()
+          .single();
+
+      _sessionId = result['id'].toString();
+
+      // Escuchar cambios en tiempo real
+      supabase
+          .from('sessions')
+          .stream(primaryKey: ['id'])
+          .eq('id', _sessionId!)
+          .listen((data) {
+            if (data.isNotEmpty && data[0]['status'] == 'matched') {
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SessionScreen(
+                      duration: widget.duration,
+                      goal: widget.goal,
+                    ),
+                  ),
+                );
+              }
+            }
+          });
+    }
+  }
+
+  Future<void> _cancelMatching() async {
+    if (_sessionId != null) {
+      await supabase.from('sessions').delete().eq('id', _sessionId!);
+    }
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -36,11 +105,11 @@ class _MatchingScreenState extends State<MatchingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 80,
                 height: 80,
                 child: CircularProgressIndicator(
-                  color: const Color(0xFF4AA064),
+                  color: Color(0xFF4AA064),
                   strokeWidth: 2,
                 ),
               ),
@@ -60,7 +129,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
               ),
               const SizedBox(height: 40),
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: _cancelMatching,
                 child: const Text(
                   'Cancelar',
                   style: TextStyle(color: Color(0xFF3D6050), fontSize: 13),
