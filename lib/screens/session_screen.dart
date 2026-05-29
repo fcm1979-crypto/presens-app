@@ -1,11 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
 import 'finish_screen.dart';
 
 class SessionScreen extends StatefulWidget {
   final int duration;
   final String goal;
-  const SessionScreen({super.key, required this.duration, required this.goal});
+  final String sessionId;
+  const SessionScreen({
+    super.key,
+    required this.duration,
+    required this.goal,
+    required this.sessionId,
+  });
 
   @override
   State<SessionScreen> createState() => _SessionScreenState();
@@ -14,26 +21,59 @@ class SessionScreen extends StatefulWidget {
 class _SessionScreenState extends State<SessionScreen> {
   late int _secondsLeft;
   Timer? _timer;
+  final _jitsi = JitsiMeet();
 
   @override
   void initState() {
     super.initState();
     _secondsLeft = widget.duration * 60;
+    _startTimer();
+    _startJitsi();
+  }
+
+  Future<void> _startJitsi() async {
+    final options = JitsiMeetConferenceOptions(
+      room: 'presens-${widget.sessionId}',
+      configOverrides: {
+        'startWithAudioMuted': true,
+        'startWithVideoMuted': false,
+        'disableDeepLinking': true,
+      },
+      featureFlags: {
+        'chat.enabled': false,
+        'invite.enabled': false,
+        'recording.enabled': false,
+        'live-streaming.enabled': false,
+        'meeting-name.enabled': false,
+        'meeting-password.enabled': false,
+        'tile-view.enabled': false,
+        'toolbox.enabled': false,
+      },
+    );
+    await _jitsi.join(options);
+  }
+
+  void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_secondsLeft > 0) {
         setState(() => _secondsLeft--);
       } else {
-        _timer?.cancel();
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FinishScreen(duration: widget.duration),
-            ),
-          );
-        }
+        _endSession();
       }
     });
+  }
+
+  void _endSession() {
+    _timer?.cancel();
+    _jitsi.hangUp();
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FinishScreen(duration: widget.duration),
+        ),
+      );
+    }
   }
 
   @override
@@ -88,7 +128,7 @@ class _SessionScreenState extends State<SessionScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'María G.',
+                            'Compañero',
                             style: TextStyle(
                               fontSize: 13,
                               color: Color(0xFFB0CDB8),
@@ -198,15 +238,7 @@ class _SessionScreenState extends State<SessionScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {
-                    _timer?.cancel();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => FinishScreen(duration: widget.duration),
-                      ),
-                    );
-                  },
+                  onPressed: _endSession,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF4D7A5E),
                     side: const BorderSide(color: Color(0xFF1E3528)),

@@ -24,7 +24,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
   Future<void> _startMatching() async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
 
-    // Buscar si hay alguien esperando
     final waiting = await supabase
         .from('sessions')
         .select()
@@ -35,7 +34,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
         .maybeSingle();
 
     if (waiting != null) {
-      // Hay alguien esperando — emparejamos
       await supabase
           .from('sessions')
           .update({'status': 'matched', 'partner_id': userId})
@@ -45,13 +43,15 @@ class _MatchingScreenState extends State<MatchingScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                SessionScreen(duration: widget.duration, goal: widget.goal),
+            builder: (_) => SessionScreen(
+              duration: widget.duration,
+              goal: widget.goal,
+              sessionId: waiting['id'].toString(),
+            ),
           ),
         );
       }
     } else {
-      // No hay nadie — nos ponemos en espera
       final result = await supabase
           .from('sessions')
           .insert({
@@ -66,7 +66,6 @@ class _MatchingScreenState extends State<MatchingScreen> {
 
       _sessionId = result['id'].toString();
 
-      // Escuchar cambios en tiempo real
       supabase
           .from('sessions')
           .stream(primaryKey: ['id'])
@@ -80,6 +79,7 @@ class _MatchingScreenState extends State<MatchingScreen> {
                     builder: (_) => SessionScreen(
                       duration: widget.duration,
                       goal: widget.goal,
+                      sessionId: _sessionId!,
                     ),
                   ),
                 );
